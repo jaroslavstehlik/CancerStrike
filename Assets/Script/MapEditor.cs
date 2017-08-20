@@ -29,7 +29,7 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
         }
         mapData.skin = skin.skinName;
         grid = new GameObject[rows * collumns];
-        mapData.Fill(MapData.CELL.EMPTY);
+        mapData.Fill(MapData.CELL.FLOOR);
 
         Refresh();
         navMeshSurface.BuildNavMesh();
@@ -88,7 +88,14 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
         x = Mathf.Clamp(x, 0, rows - 1);
         y = Mathf.Clamp(y, 0, collumns - 1);
 
-        PlaceFloor(x, y);
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            PlaceFloor(x, y);
+        }
+        else
+        {
+            PlaceWall(x, y);
+        }
 
         Refresh();
     }
@@ -96,6 +103,7 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
     void PlaceFloor(int x, int y)
     {
         mapData[x, y] = MapData.CELL.FLOOR;
+        /*
         if(mapData.Contains(x - 1, y + 1) && mapData[x - 1, y + 1] != MapData.CELL.FLOOR) mapData[x - 1, y + 1] = MapData.CELL.WALL;
         if (mapData.Contains(x, y + 1) && mapData[x, y + 1] != MapData.CELL.FLOOR) mapData[x, y + 1] = MapData.CELL.WALL;
         if (mapData.Contains(x + 1, y + 1) && mapData[x + 1, y + 1] != MapData.CELL.FLOOR) mapData[x + 1, y + 1] = MapData.CELL.WALL;
@@ -106,9 +114,15 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
 
         if (mapData.Contains(x - 1, y - 1) && mapData[x - 1, y - 1] != MapData.CELL.FLOOR) mapData[x - 1, y - 1] = MapData.CELL.WALL;
         if (mapData.Contains(x, y - 1) && mapData[x, y - 1] != MapData.CELL.FLOOR) mapData[x, y - 1] = MapData.CELL.WALL;
-        if (mapData.Contains(x + 1, y - 1) && mapData[x + 1, y - 1] != MapData.CELL.FLOOR) mapData[x + 1, y - 1] = MapData.CELL.WALL;        
+        if (mapData.Contains(x + 1, y - 1) && mapData[x + 1, y - 1] != MapData.CELL.FLOOR) mapData[x + 1, y - 1] = MapData.CELL.WALL;   
+        */     
     }
     
+    void PlaceWall(int x, int y)
+    {
+        mapData[x, y] = MapData.CELL.WALL;        
+    }
+
     void Refresh()
     {
         ClearMap();
@@ -148,7 +162,7 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
         switch(cell)
         {
             case MapData.CELL.FLOOR:
-                return skin.floor;
+                return skin.floor[Mathf.Clamp(Random.Range(0, skin.floor.Length), 0, skin.floor.Length - 1)];
             case MapData.CELL.WALL:
                 return GetWallPrefab(x, y);
         }
@@ -157,191 +171,17 @@ public class MapEditor : MonoBehaviour, IPointerClickHandler, IPointerDownHandle
     }
 
     GameObject GetWallPrefab(int x, int y)
-    {
-        
-        GameObject go = null;
-        MapData.Sector sector = mapData.GetSector(x, y);
-        
-        if( sector.top != MapData.CELL.FLOOR &&
-            sector.left != MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.WALL &&
-            sector.bottomRight == MapData.CELL.FLOOR
-            )
+    {        
+        MapData.Sector sector = mapData.GetSector(x, y);        
+        for(int i = 0; i < skin.tiles.Length; i++)
         {
-            return skin.topLeftWall;
+            for (int j = 0; j < skin.tiles[i].rules.Length; j++)
+            {
+                if (sector.Compare(skin.tiles[i].rules[j])) return skin.tiles[i].prefab;
+            }
         }
 
-        if(
-            sector.top != MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.FLOOR
-            )
-        {
-            return skin.topWall;
-        }
-
-        if (
-            sector.top != MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right != MapData.CELL.FLOOR &&
-            sector.bottom == MapData.CELL.WALL &&
-            sector.bottomLeft == MapData.CELL.FLOOR
-            )
-        {
-            return skin.topRightWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left != MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.FLOOR &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.leftWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.EMPTY &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.rightWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.topRight == MapData.CELL.FLOOR &&
-            sector.left != MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom != MapData.CELL.FLOOR
-            )
-        {
-            return skin.bottomLeftWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom != MapData.CELL.FLOOR
-            )
-        {
-            return skin.bottomWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.topLeft == MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right != MapData.CELL.FLOOR &&
-            sector.bottom != MapData.CELL.FLOOR
-            )
-        {
-            return skin.bottomRightWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.innerTopLeftWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.bottomWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.FLOOR &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.FLOOR &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.innerTopRightWall;
-        }
-        
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.rightWall;
-        }
-        
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.FLOOR &&
-            sector.bottom == MapData.CELL.WALL
-            )
-        {
-            return skin.leftWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.FLOOR &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.FLOOR
-            )
-        {
-            return skin.innerBottomLeftWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.WALL &&
-            sector.bottom == MapData.CELL.FLOOR
-            )
-        {
-            return skin.topWall;
-        }
-
-        if (
-            sector.top == MapData.CELL.WALL &&
-            sector.left == MapData.CELL.WALL &&
-            sector.center == MapData.CELL.WALL &&
-            sector.right == MapData.CELL.FLOOR &&
-            sector.bottom == MapData.CELL.FLOOR
-            )
-        {
-            return skin.innerBottomRightWall;
-        }
-
-        return go;
+        return null;
     }
 
     float Round(float number, float interval)

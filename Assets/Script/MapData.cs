@@ -27,9 +27,39 @@ public class MapData
             this.x = x;
             this.y = y;
 
-            this.topLeft = this.top = this.topRight = this.left = this.center = this.right = this.bottomLeft = this.bottom = this.bottomRight = CELL.EMPTY;
+            this.topLeft = this.top = this.topRight = this.left = this.center = this.right = this.bottomLeft = this.bottom = this.bottomRight = CELL.FLOOR;
         }
-    }
+
+        public override string ToString()
+        {
+            return  "x: "+x+", y: "+y+"\n"+
+                    topLeft + " " + top + " " + topRight + "\n" +
+                    left + " " + center + " " + right + "\n" +
+                    bottomLeft + " " + bottom + " " + bottomRight;
+        }
+
+        public bool Compare(MapSkinAsset.TileRule rule)
+        {
+            if (!Compare(topLeft, rule.topLeft)) return false;
+            if (!Compare(top, rule.top)) return false;
+            if (!Compare(topRight, rule.topRight)) return false;
+
+            if (!Compare(left, rule.left)) return false;
+            if (!Compare(right, rule.right)) return false;
+
+            if (!Compare(bottomLeft, rule.bottomLeft)) return false;
+            if (!Compare(bottom, rule.bottom)) return false;
+            if (!Compare(bottomRight, rule.bottomRight)) return false;
+            
+            return true;
+        }
+
+        public bool Compare(CELL cell, MapSkinAsset.TileRuleType ruleType)
+        {
+            if (ruleType == MapSkinAsset.TileRuleType.BOTH) return true;
+            return ((cell == CELL.WALL) == (ruleType == MapSkinAsset.TileRuleType.WALL));
+        }
+    }    
 
     [System.Serializable]
     public class TeamData
@@ -43,7 +73,6 @@ public class MapData
 
     public enum CELL
     {
-        EMPTY,
         WALL,
         FLOOR    
     }
@@ -77,7 +106,8 @@ public class MapData
     public Sector GetSector(int x, int y)
     {
         Sector sector = new Sector();
-
+        sector.x = x;
+        sector.y = y;
         if (Contains(x - 1, y + 1)) sector.topLeft = this[x - 1, y + 1];
         if (Contains(x, y + 1)) sector.top = this[x, y + 1];
         if (Contains(x + 1, y + 1)) sector.topRight = this[x + 1, y + 1];
